@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<!doctype html>
+<html>
+<head>
+    <title>Network | Random nodes</title>
+
+    <style type="text/css">
+        body {
+            font: 10pt sans;
+        }
+
+        #mynetwork {
+            width: 600px;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+
+    <script type="text/javascript" src="vis/dist/vis.js"></script>
+    <link href="vis/dist/vis.css" rel="stylesheet" type="text/css"/>
+
+    <script src="NeuralNetworkDemux.js"></script>
+    <script src="Graph.js"></script>
+</head>
+
+<body onload="init()">
+
+<script type="text/javascript">
+    var network = null;
+    var graph = null;
+
+    function init() {
+
+        graph = new Graph(document.getElementById('myNetwork')).init();
+
+        var inputNodeCount = document.getElementById('inputNodeCount').value;
+
+        network = new NeuralNetwork()
+                .setOnRemoveSynapse(function (synapse) {
+                    var from = graph.findNodeByObj(synapse.ni);
+                    var to = graph.findNodeByObj(synapse.no);
+
+                    graph.removeEdge(from, to);
+                })
+                .setOnAddSynapse(function (synapse) {
+                    var from = graph.findNodeByObj(synapse.ni);
+                    var to = graph.findNodeByObj(synapse.no);
+
+                    var edge = graph.createEdge(from, to);
+
+                    if (synapse.w) {
+                        edge.setColor('red');
+                    } else {
+                        edge.setColor('blue');
+                    }
+                })
+                .setOnValChange(function (nVal) {
+                    var node = this.node;
+                    if (nVal) {
+                        node.setColor('red');
+                    } else {
+                        node.setColor('blue');
+                    }
+                })
+                .setOnNeuronAdded(function (id, neuron) {
+                    var d = neuron.getDepth();
+                    var node = graph.createNode(neuron).setLevel(d);
+                    neuron.node = node;
+                    node.obj = neuron;
+                })
+                .setOnInputCreate(function (id, neuron) {
+                    var node = graph.createNode(neuron).setLevel(0);
+                    neuron.node = node;
+                    node.obj = neuron;
+                })
+                .setOnOutputCreate(function (id, neuron) {
+                    var d = neuron.getDepth();
+                    var node = graph.createNode(neuron).setLevel(9);
+                    neuron.node = node;
+                    node.obj = neuron;
+                })
+                .initialize(inputNodeCount);
+
+        graph.setOnClick(function () {
+            this.obj.setVal(!this.obj.val);
+            network.calc();
+            graph.draw();
+        });
+
+        graph.draw();
+
+    }
+
+    function calculate() {
+        network.calc();
+        graph.draw();
+    }
+
+    function learn() {
+        network.calc();
+        network.learn();
+        network.calc();
+        graph.draw();
+    }
+
+    function reset(){
+        init();
+    }
+</script>
+
+<button id="calculate" onclick="calculate()">Calculate</button>
+<button id="learn" onclick="learn();">Learn</button>
+<input id="inputNodeCount" type="number" value="9" onchange="reset()"/>
+<br>
+<canvas id="myNetwork" width="800" height="600"></canvas>
+
+
+</body>
+</html>
